@@ -296,6 +296,9 @@ void GetPidsByProcessName(const WCHAR* processName, DWORD* pidArray, DWORD* coun
 void CloseTcpConnectionsByPid(DWORD pid) {
     DWORD size = 0;
     DWORD result;
+    struct in_addr IpAddr;
+    char szLocalAddr[128];
+    char szRemoteAddr[128];
 
     result = GetExtendedTcpTable(NULL, &size, TRUE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
     if (result != ERROR_INSUFFICIENT_BUFFER) {
@@ -311,7 +314,25 @@ void CloseTcpConnectionsByPid(DWORD pid) {
         for (DWORD i = 0; i < tcpTable->dwNumEntries; ++i) {
             MIB_TCPROW_OWNER_PID* row = &tcpTable->table[i];
             if (row->dwOwningPid == pid && row->dwState == MIB_TCP_STATE_ESTAB) {
-                printf("[+] Killing TCP connection for PID %d\n", pid);
+                DebugLog("[+] Killing TCP connection for PID %d", pid);
+                
+                IpAddr.S_un.S_addr = (u_long)tcpTable->table[i].dwRemoteAddr;
+                strcpy_s(szRemoteAddr, sizeof(szRemoteAddr), inet_ntoa(IpAddr));
+                DebugLog("\tTCP[%d] Remote Addr: %s", i, szRemoteAddr);
+                DebugLog("\tTCP[%d] Remote Port: %d \n", i, ntohs((u_short)tcpTable->table[i].dwRemotePort));
+                
+                row->dwState = MIB_TCP_STATE_DELETE_TCB;
+                MySetTcpEntry(row);
+            }
+
+            if (row->dwOwningPid == pid && row->dwState == MIB_TCP_STATE_LISTEN) {
+                DebugLog("[+] Killing TCP Listening Port for PID %d", pid);
+
+                IpAddr.S_un.S_addr = (u_long)tcpTable->table[i].dwLocalAddr;
+                strcpy_s(szLocalAddr, sizeof(szLocalAddr), inet_ntoa(IpAddr));
+                DebugLog("\tTCP[%d] Local Addr: %s", i, szLocalAddr);
+                DebugLog("\tTCP[%d] Local Port: %d \n", i, ntohs((u_short)tcpTable->table[i].dwLocalPort));
+
                 row->dwState = MIB_TCP_STATE_DELETE_TCB;
                 MySetTcpEntry(row);
             }
