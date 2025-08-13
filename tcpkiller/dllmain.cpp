@@ -350,10 +350,10 @@ DWORD WINAPI TcpKillerThread(LPVOID lpParam) {
         return 0;
     }
 
-    if (!(pParams->dwKillInterval) || !(pParams->dwDuration)) {
-        DebugLog("[-] No dwKillInterval or dwDuration");
-        return 0;
-    }
+    //if (!(pParams->dwKillInterval) || !(pParams->dwDuration)) {
+    //    DebugLog("[-] No dwKillInterval or dwDuration");
+    //    return 0;
+    //}
 
     DebugLog("[+] TcpKiller thread started for process: %S", pParams->szProcessName);
     DebugLog("[+] Kill interval: %d ms, Duration: %d seconds",
